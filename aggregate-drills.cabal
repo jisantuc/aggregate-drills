@@ -1,0 +1,61 @@
+cabal-version:   3.0
+name:            aggregate-drills
+version:         0.1.0.0
+license:         MIT
+license-file:    LICENSE
+author:          James Santucci
+maintainer:      james.santucci@gmail.com
+copyright:       2024
+category:        Game
+build-type:      Simple
+
+common warnings
+        ghc-options: -Wall
+
+library
+        import:           warnings
+        exposed-modules:
+                Lib
+                Data.PracticeLog
+                Database.RunOutDrill
+        
+        build-depends:
+                base         ^>=4.18
+              , aeson
+              , bytestring
+              , frontmatter
+              , persistent
+              , persistent-sqlite
+        
+        hs-source-dirs:   src
+        default-language: Haskell2010
+
+executable aggregate-drills
+        import:           warnings
+        main-is:          Main.hs
+        
+        -- other-modules:
+        -- other-extensions:
+        build-depends:
+                , aggregate-drills
+                , base                  ^>=4.18
+                , persistent
+                , persistent-sqlite
+        
+        hs-source-dirs:   app
+        default-language: Haskell2010
+
+test-suite aggregate-drills-test
+        import:           warnings
+        default-language: Haskell2010
+        
+        other-modules:
+                LibSpec
+        
+        type:             exitcode-stdio-1.0
+        hs-source-dirs:   test
+        main-is:          Spec.hs
+        build-depends:
+                , aggregate-drills
+                , base        ^>=4.18
+                , hspec

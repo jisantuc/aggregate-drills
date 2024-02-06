@@ -1,0 +1,4 @@
+.env
+result
+dist-newstyle
+*.db
