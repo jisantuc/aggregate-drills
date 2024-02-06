@@ -7,6 +7,8 @@ module Data.PracticeLog where
 import Data.Aeson (FromJSON (parseJSON))
 import qualified Data.Aeson as Aeson
 import GHC.Generics (Generic)
+import Data.Frontmatter (parseYamlFrontmatterEither)
+import Data.ByteString (ByteString)
 
 data Drill = TenBallRunOut deriving (Eq, Show)
 
@@ -23,3 +25,6 @@ data Frontmatter = TenBallRunoutFrontmatter
     totalBalls :: Int
   }
   deriving (Eq, Show, Generic, FromJSON)
+
+readHeader :: ByteString -> Either String Frontmatter
+readHeader = parseYamlFrontmatterEither

@@ -39,6 +39,8 @@ executable aggregate-drills
         build-depends:
                 , aggregate-drills
                 , base                  ^>=4.18
+                , bytestring
+                , Glob
                 , persistent
                 , persistent-sqlite
         

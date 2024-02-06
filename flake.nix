@@ -15,6 +15,7 @@
             aeson
             bytestring
             frontmatter
+            Glob
             persistent
             persistent-sqlite
           ]);
