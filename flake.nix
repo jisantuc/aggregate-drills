@@ -14,8 +14,10 @@
           packageDependencies = (ps: with ps; [
             aeson
             bytestring
+            filepath
             frontmatter
             Glob
+            optparse-applicative
             persistent
             persistent-sqlite
           ]);

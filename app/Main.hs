@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
@@ -24,11 +25,29 @@ import Database.RunOutDrill
     RunOutDrillRack (RunOutDrillRack),
     runOutDrillMigration,
   )
+import Options.Applicative (execParser, fullDesc, help, helper, info, long, metavar, progDesc, strOption, (<**>))
+import qualified Options.Applicative as CLI
+import System.FilePath (joinPath)
 import System.FilePath.Glob (glob)
+
+newtype CLIOpts = CLIOpts
+  { rootDirectory :: FilePath
+  }
+  deriving (Eq, Show)
+
+cliParser :: CLI.Parser CLIOpts
+cliParser =
+  CLIOpts
+    <$> strOption
+      ( long "root-directory"
+          <> metavar "ROOTDIR"
+          <> help "Directory to search for drill files"
+      )
 
 main :: IO ()
 main = do
-  drillFiles <- glob "/home/james/vimwiki/diary/**/*drill.md"
+  (CLIOpts {rootDirectory}) <- execParser opts
+  drillFiles <- glob $ joinPath [rootDirectory, "**/*drill.md"]
   frontMatters <-
     ( BS.readFile
         >=> ( \bs ->
@@ -52,3 +71,9 @@ main = do
     racksForDrill <- selectList [RunOutDrillRackDrillId ==. runOutDrillId] []
     liftIO $ print (entityVal <$> racksForDrill)
     liftIO $ print (runOutDrillHandicap . entityVal <$> allDrillsFeb1)
+  where
+    opts =
+      info
+        ( cliParser <**> helper
+        )
+        (fullDesc <> progDesc "Solve a puzzle and print the output for some year and day")

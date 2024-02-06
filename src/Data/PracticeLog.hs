@@ -6,9 +6,9 @@ module Data.PracticeLog where
 
 import Data.Aeson (FromJSON (parseJSON))
 import qualified Data.Aeson as Aeson
-import GHC.Generics (Generic)
-import Data.Frontmatter (parseYamlFrontmatterEither)
 import Data.ByteString (ByteString)
+import Data.Frontmatter (parseYamlFrontmatterEither)
+import GHC.Generics (Generic)
 
 data Drill = TenBallRunOut deriving (Eq, Show)
 
