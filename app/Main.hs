@@ -5,8 +5,8 @@ module Main where
 
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
-import qualified Data.ByteString as BS
-import Data.PracticeLog (readHeader)
+import qualified Data.ByteString.Lazy as BS
+import Data.PracticeLog (readJSON)
 import Database.Persist
   ( Entity (entityVal),
     PersistStoreRead (get),
@@ -21,13 +21,17 @@ import Database.Persist.Sql
 import Database.Persist.Sqlite (runSqlite)
 import Database.RunOutDrill
   ( EntityField (RunOutDrillDate, RunOutDrillRackDrillId),
+    RawRunOutDrillRack (RawRunOutDrillRack),
     RunOutDrill (RunOutDrill, runOutDrillHandicap),
     RunOutDrillRack (RunOutDrillRack),
+    goodBreak,
+    racksFromFile,
+    racksToFile,
     runOutDrillMigration,
   )
 import Options.Applicative (execParser, fullDesc, help, helper, info, long, metavar, progDesc, strOption, (<**>))
 import qualified Options.Applicative as CLI
-import System.FilePath (joinPath)
+import System.FilePath (dropExtension, joinPath, (<.>))
 import System.FilePath.Glob (glob)
 
 newtype CLIOpts = CLIOpts
@@ -45,35 +49,41 @@ cliParser =
       )
 
 main :: IO ()
-main = do
-  (CLIOpts {rootDirectory}) <- execParser opts
-  drillFiles <- glob $ joinPath [rootDirectory, "**/*drill.md"]
-  frontMatters <-
-    ( BS.readFile
-        >=> ( \bs ->
-                case readHeader bs of
-                  Right a -> pure a
-                  Left s -> fail s
+main =
+  let opts =
+        info
+          (cliParser <**> helper)
+          ( fullDesc <> progDesc "Parse pool drill data from vimwiki diary directory"
+          )
+   in do
+        (CLIOpts {rootDirectory}) <- execParser opts
+        drillFiles <- glob $ joinPath [rootDirectory, "**/*drill.json"]
+        print drillFiles
+        let rawRack = RawRunOutDrillRack 1 4 goodBreak "bad miss, oops" 4
+        racksToFile [rawRack] "out.csv"
+        drillSummaries <-
+          ( BS.readFile
+              >=> ( \bs ->
+                      case readJSON bs of
+                        Right a -> pure a
+                        Left s -> fail s
+                  )
             )
-      )
-      `traverse` drillFiles
-  print frontMatters
-  runSqlite "database.db" $ do
-    runMigration runOutDrillMigration
+            `traverse` drillFiles
+        let csvFiles = (\fp -> dropExtension fp <.> "csv") <$> drillFiles
+        print csvFiles
+        print drillSummaries
+        racks <- racksFromFile (head csvFiles)
+        print racks
+        runSqlite "database.db" $ do
+          _ <- runMigration runOutDrillMigration
+          runOutDrillId <- insert $ RunOutDrill "2024-02-01" 90 1 15
+          insert_ $ RunOutDrillRack runOutDrillId 1 2 5 "bad miss on an easy cut"
 
-    runOutDrillId <- insert $ RunOutDrill "2024-02-01" 90 1 15
-    insert_ $ RunOutDrillRack runOutDrillId 1 2 5 "bad miss on an easy cut"
+          drill <- get runOutDrillId
+          liftIO $ print (drill :: Maybe RunOutDrill)
 
-    drill <- get runOutDrillId
-    liftIO $ print (drill :: Maybe RunOutDrill)
-
-    allDrillsFeb1 <- selectList [RunOutDrillDate ==. "2024-02-01"] []
-    racksForDrill <- selectList [RunOutDrillRackDrillId ==. runOutDrillId] []
-    liftIO $ print (entityVal <$> racksForDrill)
-    liftIO $ print (runOutDrillHandicap . entityVal <$> allDrillsFeb1)
-  where
-    opts =
-      info
-        ( cliParser <**> helper
-        )
-        (fullDesc <> progDesc "Solve a puzzle and print the output for some year and day")
+          allDrillsFeb1 <- selectList [RunOutDrillDate ==. "2024-02-01"] []
+          racksForDrill <- selectList [RunOutDrillRackDrillId ==. runOutDrillId] []
+          liftIO $ print (entityVal <$> racksForDrill)
+          liftIO $ print (runOutDrillHandicap . entityVal <$> allDrillsFeb1)

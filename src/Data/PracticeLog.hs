@@ -4,10 +4,9 @@
 
 module Data.PracticeLog where
 
-import Data.Aeson (FromJSON (parseJSON))
+import Data.Aeson (FromJSON (parseJSON), eitherDecode)
 import qualified Data.Aeson as Aeson
-import Data.ByteString (ByteString)
-import Data.Frontmatter (parseYamlFrontmatterEither)
+import Data.ByteString.Lazy (ByteString)
 import GHC.Generics (Generic)
 
 data Drill = TenBallRunOut deriving (Eq, Show)
@@ -16,7 +15,7 @@ instance FromJSON Drill where
   parseJSON (Aeson.String "10 Ball Run Out") = pure TenBallRunOut
   parseJSON _ = fail "must be 10 Ball Run out"
 
-data Frontmatter = TenBallRunoutFrontmatter
+data TenBallRunOutSummary = TenBallRunoutSummary
   { date :: String,
     drill :: Drill,
     handicap :: Maybe Int,
@@ -26,5 +25,5 @@ data Frontmatter = TenBallRunoutFrontmatter
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-readHeader :: ByteString -> Either String Frontmatter
-readHeader = parseYamlFrontmatterEither
+readJSON :: ByteString -> Either String TenBallRunOutSummary
+readJSON = eitherDecode

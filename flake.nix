@@ -14,8 +14,8 @@
           packageDependencies = (ps: with ps; [
             aeson
             bytestring
+            cassava
             filepath
-            frontmatter
             Glob
             optparse-applicative
             persistent
@@ -39,7 +39,7 @@
         {
           devShells.default = pkgs.mkShell
             {
-              packages = [ haskell ] ++ devDependencies;
+              packages = [ haskell pkgs.litecli ] ++ devDependencies;
             };
 
           packages.default = haskellPackages.callCabal2nix "aggregate-drills" ./. { };
