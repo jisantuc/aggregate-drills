@@ -3,8 +3,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
-{-# HLINT ignore "Avoid lambda using `infix`" #-}
-
 module AggregateDrills.IO where
 
 import Control.Monad ((>=>))
@@ -12,7 +10,13 @@ import Control.Monad.IO.Class (MonadIO (liftIO))
 import qualified Data.ByteString.Lazy as BS
 import Data.PracticeLog (TenBallRunOutSummary (..), readJSON)
 import Data.Text (Text)
-import Database.Persist (Entity (Entity), PersistQueryRead (selectFirst), PersistStoreWrite (insert, insertMany_), (==.))
+import Database.Persist
+  ( Entity (..),
+    insert,
+    insertMany_,
+    selectFirst,
+    (==.),
+  )
 import Database.Persist.Sqlite (runSqlite)
 import Database.RunOutDrill
   ( EntityField (..),
@@ -51,5 +55,5 @@ loadRunOutDrillPairToDatabase databaseName (summary@(TenBallRunoutSummary {date}
     Nothing ->
       insert (fromComponents summary (length racks)) >>= \runOutDrillId -> do
         liftIO $ print $ "Inserting racks for " ++ show runOutDrillId
-        let runOutDrillRacks = (\rawRack -> associateToSummary rawRack runOutDrillId) <$> racks
+        let runOutDrillRacks = (`associateToSummary` runOutDrillId) <$> racks
         insertMany_ runOutDrillRacks

@@ -13,7 +13,7 @@ data Drill = TenBallRunOut deriving (Eq, Show)
 
 instance FromJSON Drill where
   parseJSON (Aeson.String "10 Ball Run Out") = pure TenBallRunOut
-  parseJSON _ = fail "must be 10 Ball Run out"
+  parseJSON _ = fail "must be '10 Ball Run out'"
 
 data TenBallRunOutSummary = TenBallRunoutSummary
   { date :: String,
