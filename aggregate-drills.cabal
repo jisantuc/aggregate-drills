@@ -1,13 +1,13 @@
-cabal-version:   3.0
-name:            aggregate-drills
-version:         0.1.0.0
-license:         MIT
-license-file:    LICENSE
-author:          James Santucci
-maintainer:      james.santucci@gmail.com
-copyright:       2024
-category:        Game
-build-type:      Simple
+cabal-version: 3.0
+name:          aggregate-drills
+version:       0.1.0.0
+license:       MIT
+license-file:  LICENSE
+author:        James Santucci
+maintainer:    james.santucci@gmail.com
+copyright:     2024
+category:      Game
+build-type:    Simple
 
 common warnings
         ghc-options: -Wall
@@ -15,17 +15,17 @@ common warnings
 library
         import:           warnings
         exposed-modules:
-                Lib
                 Data.PracticeLog
                 Database.RunOutDrill
+                Lib
         
         build-depends:
-                base         ^>=4.18
-              , aeson
-              , bytestring
-              , cassava
-              , persistent
-              , persistent-sqlite
+                , aeson
+                , base               ^>=4.18
+                , bytestring
+                , cassava
+                , persistent
+                , persistent-sqlite
         
         hs-source-dirs:   src
         default-language: Haskell2010
@@ -33,7 +33,6 @@ library
 executable aggregate-drills
         import:           warnings
         main-is:          Main.hs
-        
         build-depends:
                 , aggregate-drills
                 , base                  ^>=4.18
@@ -43,21 +42,20 @@ executable aggregate-drills
                 , optparse-applicative
                 , persistent
                 , persistent-sqlite
+                , text
         
         hs-source-dirs:   app
         default-language: Haskell2010
+        other-modules:    AggregateDrills.IO
 
 test-suite aggregate-drills-test
         import:           warnings
         default-language: Haskell2010
-        
-        other-modules:
-                LibSpec
-        
+        other-modules:    LibSpec
         type:             exitcode-stdio-1.0
         hs-source-dirs:   test
         main-is:          Spec.hs
         build-depends:
                 , aggregate-drills
-                , base        ^>=4.18
+                , base              ^>=4.18
                 , hspec
