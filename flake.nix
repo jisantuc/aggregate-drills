@@ -20,6 +20,7 @@
             optparse-applicative
             persistent
             persistent-sqlite
+            text
           ]);
           devDependencies = with haskellPackages; [
             cabal-fmt

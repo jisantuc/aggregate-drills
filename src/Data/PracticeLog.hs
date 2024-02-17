@@ -18,7 +18,7 @@ instance FromJSON Drill where
 data TenBallRunOutSummary = TenBallRunoutSummary
   { date :: String,
     drill :: Drill,
-    handicap :: Maybe Int,
+    handicap :: Int,
     location :: String,
     tableSize :: Int,
     totalBalls :: Int

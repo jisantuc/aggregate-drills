@@ -3,39 +3,35 @@
 
 module Main where
 
-import Control.Monad ((>=>))
-import Control.Monad.IO.Class (liftIO)
+import AggregateDrills.IO (loadRunOutDrillPairToDatabase)
 import qualified Data.ByteString.Lazy as BS
+import Data.Foldable (traverse_)
 import Data.PracticeLog (readJSON)
-import Database.Persist
-  ( Entity (entityVal),
-    PersistStoreRead (get),
-    PersistStoreWrite (insert),
-    insert_,
-    selectList,
-    (==.),
-  )
-import Database.Persist.Sql
-  ( runMigration,
-  )
-import Database.Persist.Sqlite (runSqlite)
+import Data.Text (Text)
+import Database.Persist.Sqlite (runMigration, runSqlite)
 import Database.RunOutDrill
-  ( EntityField (RunOutDrillDate, RunOutDrillRackDrillId),
-    RawRunOutDrillRack (RawRunOutDrillRack),
-    RunOutDrill (RunOutDrill, runOutDrillHandicap),
-    RunOutDrillRack (RunOutDrillRack),
-    goodBreak,
-    racksFromFile,
-    racksToFile,
+  ( racksFromFile,
     runOutDrillMigration,
   )
-import Options.Applicative (execParser, fullDesc, help, helper, info, long, metavar, progDesc, strOption, (<**>))
+import Options.Applicative
+  ( execParser,
+    fullDesc,
+    help,
+    helper,
+    info,
+    long,
+    metavar,
+    progDesc,
+    strOption,
+    (<**>),
+  )
 import qualified Options.Applicative as CLI
 import System.FilePath (dropExtension, joinPath, (<.>))
 import System.FilePath.Glob (glob)
 
-newtype CLIOpts = CLIOpts
-  { rootDirectory :: FilePath
+data CLIOpts = CLIOpts
+  { rootDirectory :: FilePath,
+    databaseFileName :: Text
   }
   deriving (Eq, Show)
 
@@ -47,6 +43,7 @@ cliParser =
           <> metavar "ROOTDIR"
           <> help "Directory to search for drill files"
       )
+    <*> strOption (long "database-file" <> metavar "DATABASE_FILE" <> help "Path to sqlite3 database file")
 
 main :: IO ()
 main =
@@ -55,35 +52,20 @@ main =
           (cliParser <**> helper)
           ( fullDesc <> progDesc "Parse pool drill data from vimwiki diary directory"
           )
+      loadPairForDrillFile databaseName drillFile = do
+        rawDrillFile <- BS.readFile drillFile
+        drillSummary <- case readJSON rawDrillFile of
+          Right a -> pure a
+          Left s -> fail s
+        let csvFile = dropExtension drillFile <.> "csv"
+        -- someday: make this logging
+        print csvFile
+        racks <- racksFromFile csvFile
+        loadRunOutDrillPairToDatabase databaseName (drillSummary, racks)
    in do
-        (CLIOpts {rootDirectory}) <- execParser opts
+        (CLIOpts {rootDirectory, databaseFileName}) <- execParser opts
+        runSqlite databaseFileName $ runMigration runOutDrillMigration
         drillFiles <- glob $ joinPath [rootDirectory, "**/*drill.json"]
+        -- someday: make this logging
         print drillFiles
-        let rawRack = RawRunOutDrillRack 1 4 goodBreak "bad miss, oops" 4
-        racksToFile [rawRack] "out.csv"
-        drillSummaries <-
-          ( BS.readFile
-              >=> ( \bs ->
-                      case readJSON bs of
-                        Right a -> pure a
-                        Left s -> fail s
-                  )
-            )
-            `traverse` drillFiles
-        let csvFiles = (\fp -> dropExtension fp <.> "csv") <$> drillFiles
-        print csvFiles
-        print drillSummaries
-        racks <- racksFromFile (head csvFiles)
-        print racks
-        runSqlite "database.db" $ do
-          _ <- runMigration runOutDrillMigration
-          runOutDrillId <- insert $ RunOutDrill "2024-02-01" 90 1 15
-          insert_ $ RunOutDrillRack runOutDrillId 1 2 5 "bad miss on an easy cut"
-
-          drill <- get runOutDrillId
-          liftIO $ print (drill :: Maybe RunOutDrill)
-
-          allDrillsFeb1 <- selectList [RunOutDrillDate ==. "2024-02-01"] []
-          racksForDrill <- selectList [RunOutDrillRackDrillId ==. runOutDrillId] []
-          liftIO $ print (entityVal <$> racksForDrill)
-          liftIO $ print (runOutDrillHandicap . entityVal <$> allDrillsFeb1)
+        loadPairForDrillFile databaseFileName `traverse_` drillFiles

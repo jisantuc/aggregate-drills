@@ -7,6 +7,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -32,8 +33,10 @@ import Data.Csv
 import Data.Csv.Incremental (Parser (..), decode, encode, encodeRecord)
 import Data.Foldable (foldlM)
 import Data.Functor (($>))
+import qualified Data.PracticeLog as PL
 import Database.Persist.Sql
   ( BackendKey (SqlBackendKey),
+    PersistEntity (Key),
   )
 import Database.Persist.TH
   ( mkMigrate,
@@ -62,11 +65,20 @@ RunOutDrillRack
     ballsOnBreak Int
     ballsAfterBreak Int
     whatWentWrong String
-
+    breakScratch Bool default=false
     deriving Eq Show
 |]
 
-newtype BreakScratch = BreakScratch Bool deriving (Eq, Show)
+fromComponents :: PL.TenBallRunOutSummary -> Int -> RunOutDrill
+fromComponents
+  ( PL.TenBallRunoutSummary
+      { PL.date = summaryDate,
+        PL.totalBalls = summaryBalls,
+        PL.handicap = summaryHandicap
+      }
+    ) = RunOutDrill summaryDate summaryBalls summaryHandicap
+
+newtype BreakScratch = BreakScratch {unBreakScratch :: Bool} deriving (Eq, Show, Read)
 
 goodBreak :: BreakScratch
 goodBreak = BreakScratch False
@@ -99,6 +111,17 @@ instance FromNamedRecord RawRunOutDrillRack
 instance DefaultOrdered RawRunOutDrillRack
 
 instance ToRecord RawRunOutDrillRack
+
+associateToSummary :: RawRunOutDrillRack -> Key RunOutDrill -> RunOutDrillRack
+associateToSummary (RawRunOutDrillRack {rackNumber, ballsOnBreak, breakScratch, whatWentWrong, totalBalls}) drillId =
+  RunOutDrillRack
+    { runOutDrillRackDrillId = drillId,
+      runOutDrillRackRackNumber = rackNumber,
+      runOutDrillRackBallsOnBreak = ballsOnBreak,
+      runOutDrillRackBallsAfterBreak = totalBalls - ballsOnBreak,
+      runOutDrillRackWhatWentWrong = whatWentWrong,
+      runOutDrillRackBreakScratch = unBreakScratch breakScratch
+    }
 
 feed :: (ByteString -> Parser RawRunOutDrillRack) -> Handle -> IO (Parser RawRunOutDrillRack)
 feed k csvFile = do
