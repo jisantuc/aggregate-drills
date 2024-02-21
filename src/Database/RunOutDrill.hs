@@ -140,7 +140,7 @@ racksFromFile path =
         ( \acc result ->
             case result of
               Right r -> pure $ acc ++ [r]
-              Left err -> print ("Err!! " <> err) $> acc
+              Left err -> fail err
         )
         []
 
