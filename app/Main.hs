@@ -54,12 +54,12 @@ main =
           )
       loadPairForDrillFile databaseName drillFile = do
         rawDrillFile <- BS.readFile drillFile
+        print $ "Loading run out drill metadata from " <> drillFile
+        let csvFile = dropExtension drillFile <.> "csv"
+        print $ "Loading run out drill racks from " <> csvFile
         drillSummary <- case readJSON rawDrillFile of
           Right a -> pure a
           Left s -> fail s
-        let csvFile = dropExtension drillFile <.> "csv"
-        -- someday: make this logging
-        print csvFile
         racks <- racksFromFile csvFile
         loadRunOutDrillPairToDatabase databaseName (drillSummary, racks)
    in do

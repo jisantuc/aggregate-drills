@@ -32,7 +32,6 @@ import Data.Csv
   )
 import Data.Csv.Incremental (Parser (..), decode, encode, encodeRecord)
 import Data.Foldable (foldlM)
-import Data.Functor (($>))
 import qualified Data.PracticeLog as PL
 import Database.Persist.Sql
   ( BackendKey (SqlBackendKey),
@@ -140,7 +139,7 @@ racksFromFile path =
         ( \acc result ->
             case result of
               Right r -> pure $ acc ++ [r]
-              Left err -> fail err
+              Left err -> print acc *> fail err
         )
         []
 
